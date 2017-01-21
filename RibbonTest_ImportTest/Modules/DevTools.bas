@@ -54,7 +54,9 @@ Public Sub ExportSourceFiles()
         Next
     Next vbProj
     
-    GitCommit "testing auto-commit again"
+    Dim strCommitMessage As String
+    strCommitMessage = InputBox("Enter in commit message:")
+    GitCommit strCommitMessage
 End Sub
 
 Private Sub ExportDocument(vbComp As vbComponent, _
