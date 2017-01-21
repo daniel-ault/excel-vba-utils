@@ -54,9 +54,11 @@ Public Sub ExportSourceFiles()
         Next
     Next vbProj
     
-    Dim strCommitMessage As String
-    strCommitMessage = InputBox("Enter in commit message:")
-    GitCommit strCommitMessage
+    
+'    MsgBox "Do you want to commit changes?", vbDefaultButton1
+'    Dim strCommitMessage As String
+'    strCommitMessage = InputBox("Enter in commit message:")
+    GitCommit ' strCommitMessage
 End Sub
 
 Private Sub ExportDocument(vbComp As vbComponent, _
@@ -82,29 +84,84 @@ End Sub
 
 
 Public Sub testt()
-    Dim vbComp As vbComponent
-    
-'    For Each vbComp In Application.VBE.ActiveVBProject.vbComponents
-'        MsgBox vbComp.Name & " - " & vbComp.Type
-'    Next vbComp
+'    Dim result As VbMsgBoxResult
+'    Dim strCommitMessage As String
+'
+'    result = MsgBox("Do you want to commit changes?", vbYesNo)
+'    If result = VbMsgBoxResult.vbNo Then Exit Sub
+'
+'    strCommitMessage = Application.InputBox("Enter commit message:")
+'    If strCommitMessage = "False" Then Exit Sub
+'    'commit code here
+'
+'    result = MsgBox("Do you want to push changes to GitHub?", vbYesNo)
+'    If result = VbMsgBoxResult.vbNo Then Exit Sub
+'
+'    MsgBox strCommitMessage
 
-    MsgBox
+    Dim strPath As String: strPath = "C:\Users\Daniel\Documents\Programming\Excel Utils\Exported Code"
+    Dim strGit As String: strGit = "git -C """ & strPath & """"
+    
+    'MsgBox ShellRun(strGit & " status")
 End Sub
 
 Sub GitCommit(Optional ByVal strCommitMessage = "")
     Dim strPath As String: strPath = "C:\Users\Daniel\Documents\Programming\Excel Utils\Exported Code"
+    Dim strGitPath As String: strGitPath = "C:\Users\Daniel\Documents\Programming\PortableGit\"
+    'Dim strGit As String: strGit = """" & strGitPath & "git-bash.exe"" -C """ & strPath & """"
     Dim strGit As String: strGit = "git -C """ & strPath & """"
     
-    If strCommitMessage = "" Then
-        strCommitMessage = "Automatically Committed via VBA whoa"
-    End If
+    Dim result As VbMsgBoxResult
     
-    Shell strGit & " add --all"
+    result = MsgBox("Do you want to commit changes?", vbYesNo)
+    If result = VbMsgBoxResult.vbNo Then Exit Sub
+    
+    
+    strCommitMessage = Application.InputBox("Enter commit message:")
+    If strCommitMessage = "False" Then Exit Sub
+    'commit code here
+    MsgBox ShellRun(strGit & " add --all")
     Sleep 500
-    Shell strGit & " commit -m """ & strCommitMessage & """"
+    MsgBox ShellRun(strGit & " commit -m """ & strCommitMessage & """")
     Sleep 500
+    
+    result = MsgBox("Do you want to push changes to GitHub?", vbYesNo)
+    If result = VbMsgBoxResult.vbNo Then Exit Sub
+    
+'    If strCommitMessage = "" Then
+'        strCommitMessage = "Automatically Committed via VBA whoa"
+'    End If
+    'Sleep 500
     Shell strGit & " push origin master", vbNormalFocus
 End Sub
+
+
+'taken from bburns.km on StackOverflow
+'http://stackoverflow.com/questions/2784367/capture-output-value-from-a-shell-command-in-vba
+Public Function ShellRun(sCmd As String, _
+                         Optional ByVal WindowStyle As VbAppWinStyle = vbMinimizedFocus) As String
+    'Run a shell command, returning the output as a string'
+
+    Dim oShell As Object
+    Set oShell = CreateObject("WScript.Shell")
+
+    'run command'
+    Dim oExec As Object
+    Dim oOutput As Object
+    Set oExec = oShell.Exec(sCmd)
+    Set oOutput = oExec.StdOut
+
+    'handle the results as they are written to and read from the StdOut object'
+    Dim s As String
+    Dim sLine As String
+    While Not oOutput.AtEndOfStream
+        sLine = oOutput.ReadLine
+        'If sLine <> "" Then
+        s = s & sLine & vbCrLf
+    Wend
+
+    ShellRun = s
+End Function
 
 Private Sub CreateFolderNew(ByVal strPath As String)
     Dim fso As Object
