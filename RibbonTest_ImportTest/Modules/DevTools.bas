@@ -1,4 +1,6 @@
 Attribute VB_Name = "DevTools"
+Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+
 Public Sub ExportSourceFiles()
     Dim strPath, strClassFolder, strModuleFolder, strExcelObjFolder As String
     Dim fso As Object
@@ -85,6 +87,19 @@ Public Sub testt()
     MsgBox
 End Sub
 
+Sub GitCommit(Optional ByVal strCommitMessage = "")
+    Dim strPath As String: strPath = "C:\Users\Daniel\Documents\Programming\Excel Utils\Exported Code"
+    Dim strGit As String: strGit = "git -C """ & strPath & """"
+    
+    If strCommitMessage = "" Then
+        strCommitMessage = "Automatically Committed via VBA whoa"
+    End If
+    
+    Shell strGit & " add --all", vbNormalFocus
+'    Shell strGit & " commit -m """ & strCommitMessage & """"
+'    Shell strGit & " push origin master", vbNormalFocus
+End Sub
+
 Private Sub CreateFolderNew(ByVal strPath As String)
     Dim fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
@@ -127,7 +142,6 @@ Private Sub DeleteFilesAndFolder(ByVal strPath As String)
 End Sub
 
 
-
 Public Sub ImportSourceFiles()
     Dim strPath As String
     strPath = ActiveWorkbook.path & "\Exported Code\" & RemoveExtension(ActiveWorkbook.Name)
@@ -149,25 +163,7 @@ Public Sub ImportSourceFilesFromPath(sourcePath As String, _
     Wend
 End Sub
 
-Public Sub ExportSourceFilesToPath(destPath As String, _
-                                   Optional wb As Workbook)
-    If IsNull(wb) Then Set wb = ActiveWorkbook
-    Dim component As vbComponent
-    
-    With Application.VBE
-        Dim proj As VBProject
-        For Each proj In .VBProjects
-            'MsgBox RemoveExtension(RemovePath(proj.fileName))
-            MsgBox .VBProjects("RibbonTest").fileName
-        Next proj
-    End With
-    
-'    For Each component In Application.VBE.ActiveVBProject.vbComponents
-'        If component.Type = vbext_ct_ClassModule Or component.Type = vbext_ct_StdModule Then
-'            component.Export destPath & component.Name & ToFileExtension(component.Type)
-'        End If
-'    Next
-End Sub
+
  
 Private Function ToFileExtension(vbeComponentType As vbext_ComponentType) As String
     Select Case vbeComponentType
