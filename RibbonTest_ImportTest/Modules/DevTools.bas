@@ -53,6 +53,8 @@ Public Sub ExportSourceFiles()
 '            End If
         Next
     Next vbProj
+    
+    GitCommit "testing auto-commit again"
 End Sub
 
 Private Sub ExportDocument(vbComp As vbComponent, _
@@ -95,9 +97,11 @@ Sub GitCommit(Optional ByVal strCommitMessage = "")
         strCommitMessage = "Automatically Committed via VBA whoa"
     End If
     
-    Shell strGit & " add --all", vbNormalFocus
-'    Shell strGit & " commit -m """ & strCommitMessage & """"
-'    Shell strGit & " push origin master", vbNormalFocus
+    Shell strGit & " add --all"
+    Sleep 500
+    Shell strGit & " commit -m """ & strCommitMessage & """"
+    Sleep 500
+    Shell strGit & " push origin master", vbNormalFocus
 End Sub
 
 Private Sub CreateFolderNew(ByVal strPath As String)
