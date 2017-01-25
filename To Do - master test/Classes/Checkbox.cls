@@ -1,4 +1,12 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
 Attribute VB_Name = "Checkbox"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
 Private mstrDescription As String
 Private mblnEnabled As Boolean
 Private mstrId As String
@@ -14,7 +22,15 @@ Private mstrScreentip As String
 Private mstrSupertip As String
 Private mstrTag As String
 Private mblnVisible As Boolean
+Private mPressed As Boolean
 
+
+Public Property Get Pressed() As Boolean
+    Pressed = mPressed
+End Property
+Public Property Let Pressed(ByVal val As Boolean)
+    mPressed = val
+End Property
 
 Public Property Get Description() As String
     Description = mstrDescription
@@ -120,5 +136,6 @@ End Property
 Public Property Let Visible(ByVal val As Boolean)
     mblnVisible = val
 End Property
+
 
 

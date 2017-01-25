@@ -19,24 +19,6 @@ Sub WriteCode()
     Set oFile = Nothing
 End Sub
 
-Sub GenerateAllModules()
-    'Generate Control Module(s)
-    
-    'Generate Enum Module
-    Dim strEnumModuleName As String
-    strEnumModuleName = "Enums"
-    AddModule strEnumModuleName, vbext_ct_StdModule
-    AddCodeToModule strEnumModuleName, GenerateAllEnums
-End Sub
-
-Sub GenerateControlModule()
-    Dim strControl As String
-    strControl = "Checkbox"
-    
-    AddModule strControl, vbext_ct_ClassModule
-    AddCodeToModule strControl, GenerateControlCode(strControl)
-End Sub
-
 Function AddModule(ByVal strName As String, _
                    ByVal ComponentType As vbext_ComponentType, _
                    Optional ByVal blnDeleteIfExists As Boolean = True) As CodeModule
@@ -59,7 +41,7 @@ Function AddModule(ByVal strName As String, _
     End If
     
     If Not blnExists Or blnDeleteIfExists Then
-        Set vbComp = vbComps.Add(vbext_ct_StdModule)
+        Set vbComp = vbComps.Add(ComponentType)
         vbComp.Name = strName
     End If
     
@@ -82,6 +64,38 @@ Sub AddCodeToModule(ByVal strName As String, ByRef strCode As String)
     End With
 End Sub
 
+Sub GenerateAllModules()
+    'Generate Control Module(s)
+    
+    'Generate Enum Module
+    Dim strEnumModuleName As String
+    strEnumModuleName = "CodeEnums"
+    AddModule strEnumModuleName, vbext_ct_StdModule
+    AddCodeToModule strEnumModuleName, GenerateAllEnums("tblEnumCode")
+End Sub
+
+Sub GenerateAllClasses()
+    Dim arrClasses As Variant
+    arrClasses = SelectTable("tblCodeClass")
+    
+    Dim i As Integer
+    For i = LBound(arrClasses, 1) To UBound(arrClasses, 1)
+        Dim strClassType, strClassName As String
+        strClassType = arrClasses(i, 1)
+        strClassName = arrClasses(i, 2)
+        
+        AddModule strClassName, vbext_ct_ClassModule
+        AddCodeToModule strClassName, GenerateClassCodeAlt(strClassType)
+    Next i
+End Sub
+
+Sub GenerateControlModule()
+    Dim strControl As String
+    strControl = "ToggleButton"
+    
+    AddModule strControl, vbext_ct_ClassModule
+    AddCodeToModule strControl, GenerateControlCode(strControl)
+End Sub
 
 Function GenerateControlCode(strControl As String) As String
     'Get list of member variables
@@ -92,7 +106,8 @@ Function GenerateControlCode(strControl As String) As String
     Dim arrAttributes As Variant
     arrAttributes = SelectFromTable("tblControlToAttribute", "strControl", strControl)
     
-    'Generate member variables from callback properties
+    'Generate member variables from attributes
+    'TODO add callback properties that aren't attributes, like getPressed
     Dim i As Integer
     Dim strParam, strVar, strVarType, strAttribute As String
     Dim arrVarType As Variant
@@ -125,7 +140,95 @@ Function GenerateControlCode(strControl As String) As String
     'generate xml?
 End Function
 
-Private Function GenerateAllEnums() As String
+Private Function GenerateClassCode(ByVal strClass As String, _
+                                   Optional ByVal strTable As String = "tblCodeClassProperties") As String
+    Dim strCode As String
+    Dim arrAttributes As Variant
+    
+    arrProperties = SelectFromTable(strTable, "strClass", strClass)
+    
+    For i = LBound(arrProperties, 1) To UBound(arrProperties, 1)
+        Dim strProperty, strVarName, strPrefix As String
+        Dim arrVarType As Variant
+        
+        strProperty = arrProperties(i, 2)
+        strVarName = FirstUpper(arrProperties(i, 3))
+        
+        If strVarName = "" Then strVarName = arrProperties(i, 2)
+        
+        If arrProperties(i, 2) = "" Then
+            strVarType = arrProperties(i, 4)
+            strPrefix = GetPrefix(strVarType)
+        Else
+            strVarType = strProperty
+        End If
+        
+        strCode = strCode & "Private m" & strPrefix & strVarName & " As " & strVarType & vbCrLf
+    Next i
+    
+    strCode = strCode & vbCrLf & vbCrLf
+    
+    For i = LBound(arrProperties, 1) To UBound(arrProperties, 1)
+        strProperty = arrProperties(i, 2)
+        strVarName = FirstUpper(arrProperties(i, 3))
+        If strVarName = "" Then strVarName = arrProperties(i, 2)
+        
+        If arrProperties(i, 2) = "" Then
+            strVarType = arrProperties(i, 4)
+            strPrefix = GetPrefix(strVarType)
+        Else
+            strVarType = strProperty
+        End If
+
+        strCode = strCode & GenerateProperty(strVarName, strVarType)
+        strCode = strCode & vbCrLf
+    Next i
+    
+    GenerateClassCode = strCode
+    
+End Function
+
+Private Function GenerateClassCodeAlt(ByVal strClass As String, _
+                                      Optional ByVal strTable As String = "tblCodeClassProperties") As String
+    'Dim strCode As String
+    Dim arrAttributes As Variant
+    
+    Dim ClassModule As New GenModule
+    ClassModule.init strClass, modClass
+        
+    arrProperties = SelectFromTable(strTable, "strClass", strClass)
+    
+    For i = LBound(arrProperties, 1) To UBound(arrProperties, 1)
+        Dim strProperty, strVarName, strPrefix, strVarNameFull As String
+        'Dim VarType As enmVarType
+        Dim arrVarType As Variant
+        
+        strProperty = arrProperties(i, 2)
+        strVarName = FirstUpper(arrProperties(i, 3))
+        
+        If strVarName = "" Then strVarName = arrProperties(i, 2)
+        
+        If arrProperties(i, 2) = "" Then
+            strVarType = arrProperties(i, 4)
+            'VarType = CodeEnums.GetVarTypeEnum(arrProperties(i, 4))
+            'strPrefix = GetPrefix(strVarType)
+        Else
+            strVarType = strProperty
+            'VarType = CodeEnums.GetVarTypeEnum(arrProperties(i, 4))
+        End If
+        
+        strVarNameFull = "m" & strPrefix & strVarName
+        
+        'ClassModule.AddVariable strVarNameFull, varType, acsPrivate
+        ClassModule.AddProperty strVarName, 0, strVarNameFull, strVarTypeOverride:=strVarType
+        'strCode = strCode & "Private m" & strPrefix & strVarName & " As " & strVarType & vbCrLf
+    Next i
+    
+    GenerateClassCodeAlt = ClassModule.CodeGen
+    
+End Function
+
+Private Function GenerateAllEnums(Optional ByVal strEnumTable As String = "tblEnum") As String
     'generate enums from tables
     Dim strCode As String
     strCode = ""
@@ -138,20 +241,25 @@ Private Function GenerateAllEnums() As String
     'arrValueTypes = SelectFromTable("tblValueType", "strDataType", "Enum")
     
     Dim colEnums As Collection
-    Dim arrEnums, vntEnum As Variant
-    arrEnums = Application.Range("tblEnum")
+    Dim arrEnums, arrEnumStrings, vntEnum As Variant
+    arrEnums = Application.Range(strEnumTable).value
     
+    'Column 1 is declarations, 2 is definitions, 3 is functions
+    Dim arrArrayCode As Variant
+    ReDim arrArrayCode(LBound(arrEnums, 1) To UBound(arrEnums, 1), 1 To 3)
+    
+    'Generate Enum types
     For i = LBound(arrEnums, 1) To UBound(arrEnums, 1)
-        
-    Next i
-    
-    For Each vntEnum In colEnums
         Dim strName, strTable, strColumn, strNamePrefix, strElementPrefix As String
-'        strName = colEnums(i, 1)
-'        strTable = colEnums(i, 2)
-'        strColumn = colEnums(i, 3)
-'        strNamePrefix = colEnums(i, 4)
-'        strElementPrefix = colEnums(i, 5)
+        Dim strArrayName, strVarName As String
+        strName = arrEnums(i, 1)
+        strTable = arrEnums(i, 2)
+        strColumn = arrEnums(i, 3)
+        strNamePrefix = arrEnums(i, 4)
+        strElementPrefix = arrEnums(i, 5)
+        
+        strArrayName = "arr" & arrEnums(i, 1) & "Strings"
+        strVarName = strElementPrefix & strName
         
         AddLine strCode, _
                 GenerateEnumFromTable(strName, _
@@ -160,10 +268,35 @@ Private Function GenerateAllEnums() As String
                                       strNamePrefix:=strNamePrefix, _
                                       strElementPrefix:=strElementPrefix, _
                                       intNewLines:=1)
-    Next vntEnum
+        
+        Dim arr As Variant
+        arr = SelectColumn(strTable, strColumn)
+        arrArrayCode(i, 1) = "Private " & strArrayName & "() As Variant"
+        arrArrayCode(i, 2) = GenerateArrayHardcode(arr, strArrayName)
+        arrArrayCode(i, 3) = GenerateArrayFunction(strArrayName, strVarName, strName)
+    Next i
+    AddLine strCode, intNewLines:=1
     
+    For i = LBound(arrArrayCode, 1) To UBound(arrArrayCode, 1)
+        AddLine strCode, arrArrayCode(i, 1)
+    Next i
+    AddLine strCode, "Private blnStringArraysSet As Boolean", intNewLines:=2
+    
+    AddLine strCode, "Private Sub SetStringArrays()"
+    For i = LBound(arrArrayCode, 1) To UBound(arrArrayCode, 1)
+        AddLine strCode, arrArrayCode(i, 2), intTabCount:=1
+    Next i
+    AddLine strCode, "blnArraysSet = True", intTabCount:=1
+    AddLine strCode, "End Sub", intNewLines:=2
+    
+    For i = LBound(arrArrayCode, 1) To UBound(arrArrayCode, 1)
+        AddLine strCode, arrArrayCode(i, 3), intNewLines:=1
+    Next i
+
     GenerateAllEnums = strCode
 End Function
+
+
 
 Private Function GenerateEnumFromTable(ByVal strName As String, _
                                        ByVal strTable As String, _
@@ -210,6 +343,70 @@ Private Function GenerateEnum(ByVal strName As String, _
     GenerateEnum = strCode
 End Function
 
+Private Function GenerateArrayHardcode(arr As Variant, _
+                                       ByVal strName As String, _
+                                       Optional ByVal intTabCount As Integer = 0, _
+                                       Optional ByVal intNewLines As Integer = 1) As String
+    Dim strCode As String
+    
+    strCode = strCode + strName & " = Array("
+    
+    Dim i As Integer
+    For i = LBound(arr, 1) To UBound(arr, 1)
+        Dim str As String
+        str = """" & arr(i) & """"
+        If i <> UBound(arr, 1) Then str = str + ", "
+        
+        strCode = strCode + str
+    Next i
+    
+    strCode = strCode + ")"
+    
+    'AddLine strCode, ""
+    
+    GenerateArrayHardcode = strCode
+End Function
+
+
+Private Function GenerateArrayFunction(ByVal strArrayName As String, _
+                                       ByVal strVarName As String, _
+                                       ByVal strVarType As String, _
+                                       Optional ByVal strFuncType As String = "String", _
+                                       Optional ByVal strArrayType As String = "String", _
+                                       Optional ByVal intTabCount As Integer = 0, _
+                                       Optional ByVal intNewLines As Integer = 1) As String
+    Dim strCode As String
+    Dim strName As String
+    strName = "Get" & strVarType & strArrayType
+    
+    AddLine strCode, "Public Function " & strName & "(" & strVarName & " As " & strVarType & ") As " & strFuncType, intTabCount
+    AddLine strCode, "If Not bln" & strArrayType & "ArraysSet Then Set" & strArrayType & "Arrays", intTabCount + 1
+    AddLine strCode, intTabCount:=intTabCount + 1
+    AddLine strCode, strName & " = " & strArrayName & "(" & strVarName & ")", intTabCount + 1
+    AddLine strCode, "End Function", intTabCount, intNewLines
+
+    GenerateArrayFunction = strCode
+End Function
+
+Private Function GenerateAssocArrayFunction(ByVal strFuncName As String, _
+                                            ByVal strVarName1 As String, _
+                                            ByVal strVarType1 As String, _
+                                            ByVal strVarName2 As String, _
+                                            ByVal strVarType2 As String, _
+                                            ByVal strArrayName As String, _
+                                            Optional ByVal intTabCount As Integer = 0, _
+                                            Optional ByVal intNewLines As Integer = 1) As String
+    Dim strCode As String
+    
+    AddLine strCode, "Public Function " & strFuncName & "(" & strVarName1 & " As " & strVarType1 & ", " & strVarName2 & " As " & strVarType2 & ") As Boolean", intTabCount
+    AddLine strCode, "If Not blnAssocArraysSet Then SetAssociationArrays", intTabCount + 1
+    AddLine strCode
+    AddLine strCode, strFuncName & " = " & strArrayName & "(" & strVarName2 & ", " & strVarName1 & ")", intTabCount + 1
+    AddLine strCode, "End Function", intTabCount, intNewLines
+End Function
+
+
+
 Private Function GenerateProperty(ByVal strProperty As String, _
                                   ByVal strVarType As String, _
                                   Optional ByVal strInheritedFrom As String = "")
@@ -253,7 +450,7 @@ err:
 End Function
 
 Private Sub AddLine(ByRef strCode As String, _
-                    ByVal strLine As String, _
+                    Optional ByVal strLine As String = "", _
                     Optional ByVal intTabCount As Integer = 0, _
                     Optional ByVal intNewLines As Integer = 1)
     

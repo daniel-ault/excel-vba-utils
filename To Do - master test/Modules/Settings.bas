@@ -24,7 +24,8 @@ Public mChk As IRibbonControl
 
 
 Public Sub Settings_Initialize()
-    mNumCheckBoxes = 10
+    mNumCheckBoxes = 9
+    mintCategoryPage = 1
     
     Set mdctChkBoxes = New Scripting.Dictionary
     Set mCategories = New Scripting.Dictionary
@@ -34,7 +35,7 @@ Public Sub Settings_Initialize()
     CategoriesInit
     ChkBoxInit
     
-    mintCategoryPage = 1
+    
     mintCategoryNumPages = Int(Ceiling(mCategories.count / UBound(mChkBoxes, 1)))
     
     Ribbon_Invalidate
@@ -86,8 +87,8 @@ Private Sub ChkBoxInit()
         'Dim chkBox As New Checkbox
         mChkBoxes(i).Id = "checkBox" & i
         mChkBoxes(i).Pressed = False
+        'mChkBoxes(i).Label = mCategories.Keys((i + intStart - 2) - 1)
         mChkBoxes(i).Label = mCategories.Keys(i - 1)
-        
         mdctChkBoxes.Add mChkBoxes(i).Id, i
         'Set mChkBoxes(i) = chkBox
     Next i
@@ -239,7 +240,14 @@ Sub checkBoxAction(control As IRibbonControl, Pressed As Boolean)
 End Sub
 
 Sub buttonAction(control As IRibbonControl)
-    MsgBox control.Id
+    If control.Id = "buttonNext" And mintCategoryPage <> mintCategoryNumPages Then
+        mintCategoryPage = mintCategoryPage + 1
+    ElseIf control.Id = "buttonPrevious" And mintCategoryPage <> 1 Then
+        mintCategoryPage = mintCategoryPage - 1
+    End If
+    
+    ChkBoxInit
+    Ribbon_Invalidate
 End Sub
 
 Sub SetFilters()

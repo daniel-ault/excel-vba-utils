@@ -108,6 +108,7 @@ End Sub
 Sub GitCommit(Optional ByVal strCommitMessage = "")
     Dim strPath As String: strPath = "C:\Users\Daniel\Documents\Programming\Excel Utils\Exported Code"
     Dim strGitPath As String: strGitPath = "C:\Users\Daniel\Documents\Programming\PortableGit\"
+    
     'Dim strGit As String: strGit = """" & strGitPath & "git-bash.exe"" -C """ & strPath & """"
     Dim strGit As String: strGit = "git -C """ & strPath & """"
     
@@ -138,8 +139,7 @@ End Sub
 
 'taken from bburns.km on StackOverflow
 'http://stackoverflow.com/questions/2784367/capture-output-value-from-a-shell-command-in-vba
-Public Function ShellRun(sCmd As String, _
-                         Optional ByVal WindowStyle As VbAppWinStyle = vbMinimizedFocus) As String
+Public Function ShellRun(sCmd As String) As String
     'Run a shell command, returning the output as a string'
 
     Dim oShell As Object
@@ -191,8 +191,8 @@ Private Sub DeleteFilesAndFolder(ByVal strPath As String)
     Dim fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
     
-    Dim oFolder As Folder
-    Dim oFile As file
+    Dim oFolder As Object
+    Dim oFile As Object
     Set oFolder = fso.GetFolder(strPath)
     
     For Each oFile In oFolder.Files

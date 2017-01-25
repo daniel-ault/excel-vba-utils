@@ -14,8 +14,8 @@ Public Sub FilteredRows()
         With Excel.ThisWorkbook.ActiveSheet
             If .Rows(i).EntireRow.Hidden Then
             Else
-                .Cells(16 + x, 11) = "Row " & i & " is visible"
-                x = x + 1
+                .Cells(16 + X, 11) = "Row " & i & " is visible"
+                X = X + 1
             End If
         End With
     Next i
